@@ -1,0 +1,40 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments
+.venv/
+venv/
+ENV/
+env/
+.env
+.env.local
+.env.*.local
+
+# Node.js
+node_modules/
+dist/
+build/
+.next/
+*.tsbuildinfo
+
+# Storage & Vector DB
+backend/data/
+*.chroma
+chroma_db/
+*.sqlite3
+*.log
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage/

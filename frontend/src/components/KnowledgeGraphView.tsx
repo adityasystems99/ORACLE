@@ -1,16 +1,32 @@
 import React, { useMemo, useState } from "react";
-import { Cpu, ExternalLink, Layers, Search, ZoomIn, ZoomOut } from "lucide-react";
+import {
+  Cpu,
+  ExternalLink,
+  Layers,
+  RotateCcw,
+  Search,
+  Sparkles,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react";
 import { GraphSnapshot, TemporalGraphNode } from "../types";
 
 interface KnowledgeGraphViewProps {
   snapshot: GraphSnapshot | null;
   onSelectNode: (nodeId: string) => void;
+  onSynthesizeReport?: (nodeId: string) => void;
 }
 
-export const KnowledgeGraphView: React.FC<KnowledgeGraphViewProps> = ({ snapshot, onSelectNode }) => {
+export const KnowledgeGraphView: React.FC<KnowledgeGraphViewProps> = ({
+  snapshot,
+  onSelectNode,
+  onSynthesizeReport,
+}) => {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [filterQuery, setFilterQuery] = useState("");
   const [selectedEcosystem, setSelectedEcosystem] = useState<string>("all");
+  const [selectedNodeType, setSelectedNodeType] = useState<string>("all");
+  const [zoom, setZoom] = useState<number>(1);
 
   const nodes = snapshot?.nodes || [];
   const edges = snapshot?.edges || [];
@@ -28,24 +44,25 @@ export const KnowledgeGraphView: React.FC<KnowledgeGraphViewProps> = ({ snapshot
         n.name.toLowerCase().includes(filterQuery.toLowerCase()) ||
         n.id.toLowerCase().includes(filterQuery.toLowerCase());
       const matchEco = selectedEcosystem === "all" || n.ecosystem === selectedEcosystem;
-      return matchQuery && matchEco;
+      const matchType = selectedNodeType === "all" || n.node_type === selectedNodeType;
+      return matchQuery && matchEco && matchType;
     });
-  }, [nodes, filterQuery, selectedEcosystem]);
+  }, [nodes, filterQuery, selectedEcosystem, selectedNodeType]);
 
   // Compute node layout positions deterministically
   const positionedNodes = useMemo(() => {
     const total = nodes.length;
     if (total === 0) return [];
     const width = 800;
-    const height = 500;
+    const height = 520;
     const centerX = width / 2;
     const centerY = height / 2;
-    const radius = 200;
+    const radius = 210;
 
     return nodes.map((node, i) => {
       const angle = (i / total) * 2 * Math.PI;
-      // Add slight offset based on ecosystem
-      const ecoOffset = node.ecosystem === "python" ? 0.8 : node.ecosystem === "node" ? 1.1 : 0.95;
+      const ecoOffset =
+        node.ecosystem === "python" ? 0.85 : node.ecosystem === "node" ? 1.05 : 0.95;
       const x = centerX + Math.cos(angle) * (radius * ecoOffset);
       const y = centerY + Math.sin(angle) * (radius * ecoOffset);
       return {
@@ -92,26 +109,30 @@ export const KnowledgeGraphView: React.FC<KnowledgeGraphViewProps> = ({ snapshot
     }
   };
 
+  const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.2, 1.8));
+  const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.2, 0.6));
+  const handleResetZoom = () => setZoom(1);
+
   return (
     <div className="space-y-4">
       {/* Top Filter and Controls */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 bg-slate-900/60 border border-slate-800 rounded-xl backdrop-blur-sm">
         <div className="flex items-center space-x-2 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-64">
+          <div className="relative flex-1 sm:w-56">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
               placeholder="Find entity node..."
               value={filterQuery}
               onChange={(e) => setFilterQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+              className="w-full pl-9 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-mono"
             />
           </div>
 
           <select
             value={selectedEcosystem}
             onChange={(e) => setSelectedEcosystem(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-cyan-500"
+            className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-cyan-500 font-mono"
           >
             <option value="all">All Ecosystems</option>
             {ecosystems.map((eco) => (
@@ -120,23 +141,37 @@ export const KnowledgeGraphView: React.FC<KnowledgeGraphViewProps> = ({ snapshot
               </option>
             ))}
           </select>
+
+          <select
+            value={selectedNodeType}
+            onChange={(e) => setSelectedNodeType(e.target.value)}
+            className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-cyan-500 font-mono hidden md:block"
+          >
+            <option value="all">All Types</option>
+            <option value="technology">Technology</option>
+            <option value="package">Package</option>
+            <option value="database">Database</option>
+            <option value="service">Service</option>
+            <option value="specification">Specification</option>
+          </select>
         </div>
 
+        {/* Legend */}
         <div className="flex items-center space-x-3 text-xs font-mono text-slate-400">
           <span className="flex items-center space-x-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-sky-400"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-sky-400" />
             <span>Python</span>
           </span>
           <span className="flex items-center space-x-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
             <span>Node.js</span>
           </span>
           <span className="flex items-center space-x-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-violet-400"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-violet-400" />
             <span>Cloud</span>
           </span>
           <span className="flex items-center space-x-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
             <span>Database</span>
           </span>
         </div>
@@ -145,8 +180,40 @@ export const KnowledgeGraphView: React.FC<KnowledgeGraphViewProps> = ({ snapshot
       {/* Main Graph Canvas and Side Inspector */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Graph SVG Visualizer */}
-        <div className="lg:col-span-2 relative bg-slate-950/80 border border-slate-800/80 rounded-xl overflow-hidden min-h-[500px] flex items-center justify-center cyber-grid">
-          <svg className="w-full h-[520px]" viewBox="0 0 800 520">
+        <div className="lg:col-span-2 relative bg-slate-950/80 border border-slate-800/80 rounded-xl overflow-hidden min-h-[520px] flex items-center justify-center cyber-grid">
+          {/* Zoom controls overlay */}
+          <div className="absolute top-3 right-3 z-10 flex items-center space-x-1.5 p-1 rounded-lg bg-slate-900/90 border border-slate-800 backdrop-blur-md">
+            <button
+              onClick={handleZoomIn}
+              className="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white"
+              title="Zoom In"
+            >
+              <ZoomIn className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleZoomOut}
+              className="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white"
+              title="Zoom Out"
+            >
+              <ZoomOut className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleResetZoom}
+              className="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white"
+              title="Reset View"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+            <span className="text-[10px] font-mono text-slate-400 px-1">
+              {Math.round(zoom * 100)}%
+            </span>
+          </div>
+
+          <svg
+            className="w-full h-[520px] transition-transform duration-200"
+            viewBox="0 0 800 520"
+            style={{ transform: `scale(${zoom})`, transformOrigin: "center center" }}
+          >
             <defs>
               <marker
                 id="arrowhead"
@@ -156,7 +223,7 @@ export const KnowledgeGraphView: React.FC<KnowledgeGraphViewProps> = ({ snapshot
                 refY="3"
                 orient="auto"
               >
-                <polygon points="0 0, 8 3, 0 6" fill="#475569" />
+                <polygon points="0 0, 8 3, 0 6" fill="#334155" />
               </marker>
               <marker
                 id="arrowhead-highlight"
@@ -187,7 +254,7 @@ export const KnowledgeGraphView: React.FC<KnowledgeGraphViewProps> = ({ snapshot
                   x2={tgtPos.x}
                   y2={tgtPos.y}
                   stroke={isConnectedToSelected ? "#00f0ff" : "#1e293b"}
-                  strokeWidth={isConnectedToSelected ? 2 : 1}
+                  strokeWidth={isConnectedToSelected ? 2.2 : 1}
                   strokeDasharray={edge.edge_type === "integrates_with" ? "4 4" : undefined}
                   markerEnd={isConnectedToSelected ? "url(#arrowhead-highlight)" : "url(#arrowhead)"}
                   className="transition-all duration-300"
@@ -263,6 +330,11 @@ export const KnowledgeGraphView: React.FC<KnowledgeGraphViewProps> = ({ snapshot
                 {selectedNode.latest_version && (
                   <p className="text-xs text-slate-400 font-mono">Latest Version: {selectedNode.latest_version}</p>
                 )}
+                {selectedNode.description && (
+                  <p className="text-xs text-slate-300 mt-2 font-sans leading-relaxed">
+                    {selectedNode.description}
+                  </p>
+                )}
               </div>
 
               {/* Direct Dependents (Incoming) */}
@@ -270,7 +342,7 @@ export const KnowledgeGraphView: React.FC<KnowledgeGraphViewProps> = ({ snapshot
                 <span className="text-xs font-semibold uppercase text-slate-400 font-mono">
                   Direct Dependents ({incomingEdges.length})
                 </span>
-                <div className="space-y-1 max-h-32 overflow-y-auto">
+                <div className="space-y-1 max-h-28 overflow-y-auto">
                   {incomingEdges.length === 0 ? (
                     <p className="text-xs text-slate-500 italic">No incoming dependents in graph.</p>
                   ) : (
@@ -292,7 +364,7 @@ export const KnowledgeGraphView: React.FC<KnowledgeGraphViewProps> = ({ snapshot
                 <span className="text-xs font-semibold uppercase text-slate-400 font-mono">
                   Depends On ({outgoingEdges.length})
                 </span>
-                <div className="space-y-1 max-h-32 overflow-y-auto">
+                <div className="space-y-1 max-h-28 overflow-y-auto">
                   {outgoingEdges.length === 0 ? (
                     <p className="text-xs text-slate-500 italic">No external dependencies.</p>
                   ) : (

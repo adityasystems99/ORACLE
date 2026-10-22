@@ -42,7 +42,7 @@ export interface IntelligenceEvent {
 export interface TemporalGraphNode {
   id: string;
   name: string;
-  node_type: "technology" | "package" | "service" | "organization" | "specification";
+  node_type: "technology" | "package" | "service" | "organization" | "specification" | "database";
   ecosystem: string;
   latest_version?: string;
   first_seen?: string;
@@ -73,7 +73,7 @@ export interface GraphSnapshot {
 export interface BlastRadiusNode {
   node_id: string;
   name: string;
-  node_type: "technology" | "package" | "service" | "organization" | "specification";
+  node_type: "technology" | "package" | "service" | "organization" | "specification" | "database";
   ecosystem: string;
   depth: number;
   relationship_path: string[];
@@ -149,3 +149,79 @@ export interface SystemHealth {
     edges: number;
   };
 }
+
+export type NavigationTab =
+  | "overview"
+  | "signals"
+  | "investigations"
+  | "graph"
+  | "reports"
+  | "timeline"
+  | "rules"
+  | "sources"
+  | "settings";
+
+export type ConnectionMode = "connected" | "demo_fixtures" | "connecting" | "error";
+
+export interface InvestigationMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: string;
+  citations?: EvidenceRef[];
+  suggestedFollowUps?: string[];
+  codeSnippets?: Array<{ language: string; code: string; filename?: string }>;
+}
+
+export interface InvestigationSession {
+  id: string;
+  title: string;
+  primary_technology: string;
+  severity: SeverityLevel;
+  created_at: string;
+  updated_at: string;
+  messages: InvestigationMessage[];
+  status: "active" | "resolved" | "archived";
+}
+
+export type LifecycleStage = "published" | "ingested" | "updated" | "superseded";
+
+export interface TimelineEvent {
+  id: string;
+  eventId: string;
+  stage: LifecycleStage;
+  title: string;
+  primary_technology: string;
+  timestamp: string;
+  summary: string;
+  latency_from_publish?: string;
+  superseded_by?: string;
+  version?: string;
+}
+
+export interface MonitoringRule {
+  id: string;
+  name: string;
+  description: string;
+  category: ChangeCategory | "any";
+  min_severity: SeverityLevel;
+  ecosystem: string;
+  technology_pattern: string;
+  enabled: boolean;
+  trigger_count: number;
+  last_triggered_at?: string;
+  alert_channels: ("webhook" | "slack" | "email" | "pagerduty")[];
+}
+
+export interface NotificationItem {
+  id: string;
+  title: string;
+  description: string;
+  severity: SeverityLevel;
+  timestamp: string;
+  read: boolean;
+  category: ChangeCategory;
+  targetTab?: NavigationTab;
+  targetId?: string;
+}
+

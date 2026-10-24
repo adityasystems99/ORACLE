@@ -1,14 +1,22 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
+  AlertCircle,
+  AlertTriangle,
   ArrowRight,
+  BookmarkCheck,
   Bot,
+  Calendar,
   Check,
+  CheckCircle2,
   ChevronRight,
   Copy,
   ExternalLink,
+  GitBranch,
+  Hash,
   MessageSquare,
   Paperclip,
   Plus,
+  RefreshCw,
   Send,
   Shield,
   ShieldAlert,
@@ -26,6 +34,7 @@ interface InvestigationCopilotProps {
   onSelectSession: (id: string) => void;
   onCreateSession: (title: string, tech: string) => void;
   onExploreBlastRadius: (tech: string) => void;
+  onUpdateSession?: (session: InvestigationSession) => void;
 }
 
 export const InvestigationCopilot: React.FC<InvestigationCopilotProps> = ({
@@ -34,6 +43,7 @@ export const InvestigationCopilot: React.FC<InvestigationCopilotProps> = ({
   onSelectSession,
   onCreateSession,
   onExploreBlastRadius,
+  onUpdateSession,
 }) => {
   const currentSession = sessions.find((s) => s.id === activeSessionId) || sessions[0] || null;
 
@@ -43,6 +53,24 @@ export const InvestigationCopilot: React.FC<InvestigationCopilotProps> = ({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedCitation, setSelectedCitation] = useState<EvidenceRef | null>(null);
   const [isInspectorOpen, setIsInspectorOpen] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [lastFailedPrompt, setLastFailedPrompt] = useState<string | null>(null);
+
+  // All citations across current session messages
+  const allSessionCitations = React.useMemo(() => {
+    if (!currentSession) return [];
+    const list: EvidenceRef[] = [];
+    const seenUrls = new Set<string>();
+    currentSession.messages.forEach((m) => {
+      m.citations?.forEach((c) => {
+        if (!seenUrls.has(c.source_url)) {
+          seenUrls.add(c.source_url);
+          list.push(c);
+        }
+      });
+    });
+    return list;
+  }, [currentSession]);
 
   // New session modal
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -60,18 +88,35 @@ export const InvestigationCopilot: React.FC<InvestigationCopilotProps> = ({
     if (!text.trim() || !currentSession || isStreaming) return;
 
     setInputPrompt("");
+    setErrorMessage(null);
+    setLastFailedPrompt(null);
     setIsStreaming(true);
     setStreamedText("");
 
     try {
-      await api.sendInvestigationMessage(currentSession.id, text, (token) => {
+      const assistantMsg = await api.sendInvestigationMessage(currentSession.id, text, (token) => {
         setStreamedText((prev) => prev + token);
       });
+      if (onUpdateSession && currentSession) {
+        onUpdateSession({
+          ...currentSession,
+          messages: [...currentSession.messages, assistantMsg],
+          updated_at: new Date().toISOString(),
+        });
+      }
     } catch (e: any) {
       console.error("Failed to stream copilot response:", e);
+      setErrorMessage(e.message || "Network request failed. Verify backend connectivity.");
+      setLastFailedPrompt(text);
     } finally {
       setIsStreaming(false);
       setStreamedText("");
+    }
+  };
+
+  const handleRetry = () => {
+    if (lastFailedPrompt) {
+      handleSendMessage(lastFailedPrompt);
     }
   };
 
@@ -186,7 +231,7 @@ export const InvestigationCopilot: React.FC<InvestigationCopilotProps> = ({
                 }`}
               >
                 <Shield className="w-3.5 h-3.5 text-cyan-400" />
-                <span className="hidden sm:inline">Evidence</span>
+                <span className="hidden sm:inline">Evidence ({allSessionCitations.length})</span>
               </button>
             </div>
           </div>
@@ -217,6 +262,23 @@ export const InvestigationCopilot: React.FC<InvestigationCopilotProps> = ({
                       : "bg-slate-950/80 border border-slate-800/90 text-slate-200"
                   }`}
                 >
+                  {/* Grounding Status Header for Assistant */}
+                  {!isUser && msg.grounding_status && (
+                    <div className="pb-1 border-b border-slate-800/70">
+                      {msg.grounding_status === "insufficient_evidence" ? (
+                        <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-mono">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                          <span>Insufficient Evidence in Monitored Sources</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono">
+                          <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                          <span>Grounded in Live RAG & Temporal Knowledge Graph</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Message Content */}
                   <div className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap font-sans">
                     {msg.content}
@@ -249,6 +311,26 @@ export const InvestigationCopilot: React.FC<InvestigationCopilotProps> = ({
                       </div>
                     ))}
 
+                  {/* Explainable Graph Paths */}
+                  {msg.graph_paths && msg.graph_paths.length > 0 && (
+                    <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
+                      <div className="flex items-center space-x-1 text-[10px] font-mono text-cyan-400 uppercase font-bold">
+                        <GitBranch className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                        <span>Explainable Graph Paths ({msg.graph_paths.length}):</span>
+                      </div>
+                      <div className="space-y-1">
+                        {msg.graph_paths.map((gp, gIdx) => (
+                          <div
+                            key={gIdx}
+                            className="px-2.5 py-1 rounded-lg bg-slate-900/90 border border-slate-800 text-[11px] font-mono text-cyan-200"
+                          >
+                            {gp}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Citations badges */}
                   {msg.citations && msg.citations.length > 0 && (
                     <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center gap-2">
@@ -260,13 +342,32 @@ export const InvestigationCopilot: React.FC<InvestigationCopilotProps> = ({
                             setSelectedCitation(cite);
                             setIsInspectorOpen(true);
                           }}
-                          className="flex items-center space-x-1 px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-[10px] font-mono text-cyan-400 hover:border-cyan-500 transition-colors"
+                          className="flex items-center space-x-1 px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-[10px] font-mono text-cyan-400 hover:border-cyan-500 hover:bg-cyan-950/20 transition-colors"
+                          title="Click to inspect ground-truth snippet and SHA256"
                         >
                           <Shield className="w-3 h-3 text-cyan-400" />
                           <span className="truncate max-w-[150px]">{cite.title}</span>
+                          {cite.document_version && (
+                            <span className="text-[9px] text-slate-400 font-mono">v{cite.document_version}</span>
+                          )}
                         </button>
                       ))}
                     </div>
+                  )}
+
+                  {/* Epistemic Uncertainty & Boundaries */}
+                  {msg.uncertainty_notes && msg.uncertainty_notes.length > 0 && (
+                    <details className="pt-2 border-t border-slate-800/60 text-[11px] font-mono group">
+                      <summary className="cursor-pointer text-amber-400 hover:text-amber-300 font-bold flex items-center space-x-1.5 select-none">
+                        <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        <span>Epistemic Uncertainty & Epistemic Boundaries ({msg.uncertainty_notes.length})</span>
+                      </summary>
+                      <ul className="list-disc pl-5 mt-2 space-y-1 text-slate-400 leading-relaxed">
+                        {msg.uncertainty_notes.map((note, nIdx) => (
+                          <li key={nIdx}>{note}</li>
+                        ))}
+                      </ul>
+                    </details>
                   )}
 
                   {/* Suggested Follow-up Questions */}
@@ -315,7 +416,7 @@ export const InvestigationCopilot: React.FC<InvestigationCopilotProps> = ({
               </div>
               <div className="max-w-2xl rounded-2xl p-4 bg-slate-950/80 border border-cyan-500/30 text-slate-200 space-y-2">
                 <div className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap font-sans">
-                  {streamedText || "Analyzing knowledge graph..."}
+                  {streamedText || "Retrieving live RAG evidence and traversing temporal graph..."}
                   <span className="inline-block w-1.5 h-3.5 bg-cyan-400 animate-pulse ml-1" />
                 </div>
               </div>
@@ -324,6 +425,25 @@ export const InvestigationCopilot: React.FC<InvestigationCopilotProps> = ({
 
           <div ref={messagesEndRef} />
         </div>
+
+        {/* Error and Retry Banner */}
+        {errorMessage && (
+          <div className="px-4 py-2 bg-red-950/50 border-t border-red-800/60 flex items-center justify-between text-xs font-mono text-red-200">
+            <div className="flex items-center space-x-2">
+              <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+            {lastFailedPrompt && (
+              <button
+                onClick={handleRetry}
+                className="px-2.5 py-1 rounded bg-red-900 hover:bg-red-800 text-white font-bold flex items-center space-x-1"
+              >
+                <RefreshCw className="w-3 h-3" />
+                <span>Retry</span>
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Input Bar */}
         <div className="p-3 border-t border-slate-800 bg-slate-950/80">
@@ -373,35 +493,106 @@ export const InvestigationCopilot: React.FC<InvestigationCopilotProps> = ({
 
           <div className="flex-1 overflow-y-auto p-3 space-y-3">
             {selectedCitation ? (
-              <div className="p-3.5 rounded-xl bg-slate-950/80 border border-cyan-500/40 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">
-                    {selectedCitation.source_type}
-                  </span>
-                  <a
-                    href={selectedCitation.source_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center space-x-1 text-cyan-400 hover:text-cyan-300 text-xs font-mono"
-                  >
-                    <span>URL</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
+              <div className="space-y-3">
+                <button
+                  onClick={() => setSelectedCitation(null)}
+                  className="text-[11px] font-mono text-cyan-400 hover:text-cyan-300 flex items-center space-x-1"
+                >
+                  <span>← All Session Citations ({allSessionCitations.length})</span>
+                </button>
 
-                <h4 className="text-xs font-bold text-white">{selectedCitation.title}</h4>
-                <p className="text-xs text-slate-300 italic bg-slate-900/80 p-2.5 rounded border border-slate-800 font-mono">
-                  "{selectedCitation.snippet}"
-                </p>
+                <div className="p-3.5 rounded-xl bg-slate-950/80 border border-cyan-500/40 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 font-bold">
+                      {selectedCitation.publisher || selectedCitation.source_type || "Source"}
+                    </span>
+                    <a
+                      href={selectedCitation.source_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center space-x-1 text-cyan-400 hover:text-cyan-300 text-xs font-mono"
+                    >
+                      <span>External URL</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
 
-                <div className="space-y-1 text-[10px] font-mono text-slate-500 pt-2 border-t border-slate-800">
-                  <div>Published: {selectedCitation.published_at || "Recent stream"}</div>
-                  <div className="break-all">Hash: {selectedCitation.content_hash}</div>
+                  <h4 className="text-xs font-bold text-white">{selectedCitation.title}</h4>
+
+                  {selectedCitation.is_superseded && (
+                    <div className="p-2 rounded bg-amber-950/60 border border-amber-800/60 text-[10px] font-mono text-amber-300 flex items-center space-x-1">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span>Superseded by newer release version</span>
+                    </div>
+                  )}
+
+                  <p className="text-xs text-slate-300 italic bg-slate-900/80 p-2.5 rounded border border-slate-800 font-mono leading-relaxed">
+                    "{selectedCitation.snippet}"
+                  </p>
+
+                  <div className="space-y-1 text-[10px] font-mono text-slate-400 pt-2 border-t border-slate-800">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">Document Version:</span>
+                      <span className="text-slate-200">v{selectedCitation.document_version || 1}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">Published:</span>
+                      <span className="text-slate-200">{selectedCitation.published_at || "Recent stream"}</span>
+                    </div>
+                    {selectedCitation.retrieved_at && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Ingested:</span>
+                        <span className="text-slate-200">{new Date(selectedCitation.retrieved_at).toLocaleString()}</span>
+                      </div>
+                    )}
+                    <div className="break-all font-mono text-[9px] text-slate-500 pt-1">
+                      SHA256: {selectedCitation.content_hash}
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : (
-              <div className="p-4 text-center text-slate-500 text-xs">
-                Click any citation badge in the copilot conversation to inspect cryptographic proof and raw snippets.
+              <div className="space-y-3">
+                <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-xs space-y-1">
+                  <div className="flex items-center space-x-1.5 text-cyan-400 font-mono font-bold text-[11px]">
+                    <Shield className="w-3.5 h-3.5" />
+                    <span>Evidence Provenance</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-snug">
+                    Ground-truth citations referenced by ORACLE in this thread. Click any citation to inspect cryptographic proof, document versions, and excerpt text.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  {allSessionCitations.length === 0 ? (
+                    <div className="p-4 text-center text-slate-500 text-xs font-mono">
+                      No citations referenced in this conversation yet.
+                    </div>
+                  ) : (
+                    allSessionCitations.map((cite, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => setSelectedCitation(cite)}
+                        className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 hover:border-cyan-500/40 cursor-pointer transition-all space-y-1.5 group"
+                      >
+                        <div className="flex items-center justify-between text-[10px] font-mono">
+                          <span className="text-cyan-400 uppercase font-bold">
+                            {cite.publisher || cite.source_type || "Source"}
+                          </span>
+                          <span className="text-slate-500">
+                            {cite.document_version ? `v${cite.document_version}` : "v1"}
+                          </span>
+                        </div>
+                        <h5 className="text-xs font-semibold text-slate-200 group-hover:text-cyan-300 transition-colors line-clamp-1">
+                          {cite.title}
+                        </h5>
+                        <p className="text-[11px] text-slate-400 italic line-clamp-2 leading-relaxed">
+                          "{cite.snippet}"
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             )}
           </div>

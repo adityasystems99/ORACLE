@@ -6,6 +6,7 @@ import logging
 from typing import Dict, List, Optional, Type
 from .base import BaseIngestionConnector
 from .github import GitHubReleasesConnector
+from .official import OfficialSourceConnector
 from .rss import RSSConnector
 from .security import SecurityAdvisoryConnector
 from .status import StatusPageConnector
@@ -22,6 +23,7 @@ CONNECTOR_REGISTRY: Dict[SourceType, Type[BaseIngestionConnector]] = {
     SourceType.GITHUB_RELEASES: GitHubReleasesConnector,
     SourceType.SECURITY_ADVISORY: SecurityAdvisoryConnector,
     SourceType.STATUS_PAGE: StatusPageConnector,
+    SourceType.OFFICIAL_REGISTRY: OfficialSourceConnector,
 }
 
 

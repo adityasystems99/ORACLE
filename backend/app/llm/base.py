@@ -1,7 +1,7 @@
 """Abstract Base Class for provider-independent LLM adapters."""
 
 import abc
-from typing import Any, Dict, Optional, Tuple, Type, TypeVar
+from typing import Any, AsyncIterator, Dict, Optional, Tuple, Type, TypeVar
 from pydantic import BaseModel
 
 T = TypeVar("T", bound=BaseModel)
@@ -28,6 +28,17 @@ class BaseLLMAdapter(abc.ABC):
         max_tokens: int = 2048,
     ) -> Tuple[str, Dict[str, Any]]:
         """Generate unstructured markdown/text response with provenance metadata."""
+        pass
+
+    @abc.abstractmethod
+    async def stream_text(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        temperature: float = 0.2,
+        max_tokens: int = 2048,
+    ) -> AsyncIterator[str]:
+        """Stream unstructured markdown/text response tokens."""
         pass
 
     @abc.abstractmethod

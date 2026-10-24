@@ -11,12 +11,17 @@ export type ChangeCategory =
 export type SeverityLevel = "critical" | "high" | "medium" | "low" | "info";
 
 export interface EvidenceRef {
+  chunk_id?: string;
   source_url: string;
-  source_type: string;
+  source_type?: string;
+  publisher?: string;
   title: string;
   snippet: string;
   published_at?: string;
+  retrieved_at?: string;
+  document_version?: number;
   content_hash: string;
+  is_superseded?: boolean;
 }
 
 export interface IntelligenceEvent {
@@ -126,12 +131,20 @@ export interface IngestionSource {
   id: string;
   name: string;
   url: string;
-  source_type: "rss" | "github_releases" | "security_advisory" | "status_page" | "changelog";
+  source_type: "rss" | "github_releases" | "security_advisory" | "status_page" | "changelog" | "official_registry";
   enabled: boolean;
   ecosystem: string;
   refresh_interval_minutes: number;
   last_synced_at?: string;
+  last_successful_run_at?: string;
+  next_scheduled_run_at?: string;
   last_status?: string;
+  error_message?: string;
+  consecutive_failures?: number;
+  etag?: string;
+  last_modified?: string;
+  target_type?: string;
+  topics?: string[];
 }
 
 export interface SystemHealth {
@@ -169,8 +182,11 @@ export interface InvestigationMessage {
   content: string;
   timestamp: string;
   citations?: EvidenceRef[];
+  graph_paths?: string[];
   suggestedFollowUps?: string[];
   codeSnippets?: Array<{ language: string; code: string; filename?: string }>;
+  uncertainty_notes?: string[];
+  grounding_status?: "fully_grounded" | "partially_grounded" | "insufficient_evidence";
 }
 
 export interface InvestigationSession {
@@ -203,6 +219,7 @@ export interface MonitoringRule {
   id: string;
   name: string;
   description: string;
+  target_type?: "technology" | "api" | "product" | "repository" | "security_advisory" | "topic";
   category: ChangeCategory | "any";
   min_severity: SeverityLevel;
   ecosystem: string;
@@ -210,7 +227,45 @@ export interface MonitoringRule {
   enabled: boolean;
   trigger_count: number;
   last_triggered_at?: string;
-  alert_channels: ("webhook" | "slack" | "email" | "pagerduty")[];
+  alert_channels: ("webhook" | "slack" | "email" | "pagerduty" | "in_app")[];
+  notification_preferences?: {
+    include_dossier?: boolean;
+    auto_trigger_investigation?: boolean;
+    webhook_url?: string;
+    slack_channel?: string;
+    email_recipients?: string[];
+  };
+}
+
+export interface AlertRecord {
+  id: string;
+  rule_id: string;
+  rule_name: string;
+  event_id: string;
+  event_title: string;
+  event_version: string;
+  severity: SeverityLevel;
+  dispatched_at: string;
+  channels: string[];
+  status: string;
+  investigation_id?: string;
+  dedup_key: string;
+}
+
+export interface SchedulerHealth {
+  is_running: boolean;
+  is_paused: boolean;
+  scheduler_type: string;
+  last_tick_at?: string;
+  active_sources_count: number;
+  active_rules_count: number;
+  jobs_scheduled: number;
+  total_runs_completed: number;
+  total_events_detected: number;
+  total_investigations_triggered: number;
+  total_errors: number;
+  sources: IngestionSource[];
+  push_vs_polling_disclaimer: string;
 }
 
 export interface NotificationItem {

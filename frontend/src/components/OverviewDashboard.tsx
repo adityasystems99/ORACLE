@@ -56,6 +56,20 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
   const breakingEvents = events.filter((e) => e.category === "breaking_change" || e.category === "deprecation");
   const healthySources = sources.filter((s) => s.last_status === "success" || s.last_status === "initialized");
 
+  // Top connected knowledge graph hubs
+  const topHubs = React.useMemo(() => {
+    if (!snapshot || !snapshot.nodes) return [];
+    const degreeMap: Record<string, number> = {};
+    (snapshot.edges || []).forEach((e) => {
+      degreeMap[e.source] = (degreeMap[e.source] || 0) + 1;
+      degreeMap[e.target] = (degreeMap[e.target] || 0) + 1;
+    });
+    return snapshot.nodes
+      .map((n) => ({ ...n, degree: degreeMap[n.id] || 0 }))
+      .sort((a, b) => b.degree - a.degree)
+      .slice(0, 4);
+  }, [snapshot]);
+
   return (
     <div className="space-y-6">
       {/* Top Telemetry Metrics Ribbon */}
@@ -280,6 +294,88 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Knowledge Graph Activity & High-Centrality Hubs */}
+          <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-4 backdrop-blur-sm">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center space-x-2.5">
+                <div className="p-1.5 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-400">
+                  <Cpu className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold font-mono text-white">Knowledge Graph Activity & Centrality Hubs</h3>
+                  <p className="text-[11px] font-mono text-slate-400">
+                    Temporal topology mapping {snapshot?.node_count || 19} tracked entities and {snapshot?.edge_count || 15} directional dependencies
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => onNavigateTab("graph")}
+                className="flex items-center space-x-1 text-xs font-mono text-cyan-400 hover:text-cyan-300 transition-colors"
+              >
+                <span>Graph Explorer</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+              {topHubs.map((hub) => (
+                <div
+                  key={hub.id}
+                  onClick={() => onExploreBlastRadius(hub.id)}
+                  className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-cyan-500/50 cursor-pointer transition-all space-y-2 group"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-800 text-cyan-400 font-bold">
+                      {hub.ecosystem}
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-500">
+                      {hub.degree} edges
+                    </span>
+                  </div>
+
+                  <div>
+                    <h5 className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors truncate">
+                      {hub.name}
+                    </h5>
+                    <p className="text-[10px] font-mono text-slate-400">
+                      v{hub.latest_version || "latest"}
+                    </p>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between text-[11px] font-mono text-cyan-400">
+                    <span>Blast Radius</span>
+                    <ArrowUpRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Edge mutations feed */}
+            <div className="pt-2 border-t border-slate-800/60 space-y-2">
+              <span className="text-[10px] font-mono uppercase text-slate-500 font-bold">
+                Active Relationship Bindings
+              </span>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                {(snapshot?.edges || []).slice(0, 3).map((edge, idx) => (
+                  <div
+                    key={idx}
+                    className="p-2 rounded-lg bg-slate-950/50 border border-slate-800 text-xs font-mono flex items-center justify-between text-slate-300"
+                  >
+                    <div className="flex items-center space-x-1.5 truncate">
+                      <span className="text-cyan-400 font-bold truncate">{edge.source}</span>
+                      <span className="text-slate-600">→</span>
+                      <span className="text-emerald-400 font-bold truncate">{edge.target}</span>
+                    </div>
+                    <span className="text-[10px] text-slate-500 shrink-0 ml-1">
+                      {edge.version_constraint || edge.edge_type}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

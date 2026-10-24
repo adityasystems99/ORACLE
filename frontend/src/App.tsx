@@ -71,6 +71,7 @@ export function App() {
   // Initial Data Fetch
   const loadAllData = async () => {
     try {
+      await api.probeBackend();
       const [h, evs, snap, rpts, srcs, tl, rules, invs, notifs] = await Promise.all([
         api.getHealth(),
         api.getEvents({ limit: 50 }),
@@ -259,6 +260,26 @@ export function App() {
     }
   };
 
+  const handleUpdateRule = async (ruleId: string, rule: Partial<MonitoringRule>) => {
+    try {
+      const updated = await api.updateMonitoringRule(ruleId, rule);
+      setMonitoringRules((prev) => prev.map((r) => (r.id === ruleId ? updated : r)));
+      showToast(`Rule "${updated.name}" updated successfully.`);
+    } catch (e: any) {
+      showToast(`Failed to update rule: ${e.message}`);
+    }
+  };
+
+  const handleDeleteRule = async (ruleId: string) => {
+    try {
+      await api.deleteMonitoringRule(ruleId);
+      setMonitoringRules((prev) => prev.filter((r) => r.id !== ruleId));
+      showToast("Monitoring rule deleted.");
+    } catch (e: any) {
+      showToast(`Failed to delete rule: ${e.message}`);
+    }
+  };
+
   // Investigation Handlers
   const handleCreateInvestigation = async (title: string, tech: string) => {
     try {
@@ -421,6 +442,12 @@ export function App() {
                 rules={monitoringRules}
                 onToggleRule={handleToggleRule}
                 onCreateRule={handleCreateRule}
+                onUpdateRule={handleUpdateRule}
+                onDeleteRule={handleDeleteRule}
+                onNavigateToInvestigation={(invId) => {
+                  setSelectedInvestigationId(invId);
+                  setActiveTab("investigations");
+                }}
               />
             )}
 
@@ -429,6 +456,11 @@ export function App() {
                 sources={sources}
                 onTriggerSourceSync={handleSourceSync}
                 isSyncingId={syncingSourceId}
+                onSourceAdded={(newSrc) => {
+                  setSources((prev) => [newSrc, ...prev]);
+                  showToast(`Source "${newSrc.name}" registered.`);
+                }}
+                onRefreshAllSources={loadAllData}
               />
             )}
 

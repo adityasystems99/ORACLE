@@ -121,7 +121,9 @@ export const api = {
         if (params?.technology) query.append("technology", params.technology);
         if (params?.limit) query.append("limit", params.limit.toString());
         const qs = query.toString();
-        return await requestWithTimeout<IntelligenceEvent[]>(`/events${qs ? `?${qs}` : ""}`);
+        const live = await requestWithTimeout<IntelligenceEvent[]>(`/events${qs ? `?${qs}` : ""}`);
+        if (live && live.length > 0) return live;
+        return inMemoryEvents;
       } catch {
         currentConnectionMode = "demo_fixtures";
       }
@@ -290,7 +292,9 @@ export const api = {
       try {
         const query = new URLSearchParams({ limit: limit.toString() });
         if (technology) query.append("technology", technology);
-        return await requestWithTimeout<ImpactReport[]>(`/impact/reports?${query.toString()}`);
+        const live = await requestWithTimeout<ImpactReport[]>(`/impact/reports?${query.toString()}`);
+        if (live && live.length > 0) return live;
+        return inMemoryReports;
       } catch {
         currentConnectionMode = "demo_fixtures";
       }
@@ -377,6 +381,25 @@ export const api = {
     };
   },
 
+  async addSource(source: IngestionSource): Promise<IngestionSource> {
+    if (currentConnectionMode === "connected") {
+      try {
+        const live = await requestWithTimeout<IngestionSource>("/ingest/sources", {
+          method: "POST",
+          body: JSON.stringify(source),
+        });
+        if (live) {
+          inMemorySources = [live, ...inMemorySources];
+          return live;
+        }
+      } catch {
+        // Fall back
+      }
+    }
+    inMemorySources = [source, ...inMemorySources];
+    return source;
+  },
+
   // Timeline Events
   async getTimelineEvents(): Promise<TimelineEvent[]> {
     return inMemoryTimeline;
@@ -384,35 +407,194 @@ export const api = {
 
   // Monitoring Rules
   async getMonitoringRules(): Promise<MonitoringRule[]> {
+    if (currentConnectionMode === "connected") {
+      try {
+        const live = await requestWithTimeout<MonitoringRule[]>("/rules");
+        if (live && live.length > 0) return live;
+      } catch {
+        // Fall back
+      }
+    }
     return inMemoryRules;
   },
 
   async toggleMonitoringRule(ruleId: string): Promise<MonitoringRule> {
+    if (currentConnectionMode === "connected") {
+      try {
+        const rule = inMemoryRules.find((r) => r.id === ruleId);
+        const action = rule?.enabled ? "pause" : "resume";
+        const updated = await requestWithTimeout<MonitoringRule>(`/rules/${ruleId}/${action}`, { method: "POST" });
+        if (updated) {
+          inMemoryRules = inMemoryRules.map((r) => (r.id === ruleId ? updated : r));
+          return updated;
+        }
+      } catch {
+        // Fall back
+      }
+    }
     inMemoryRules = inMemoryRules.map((r) => (r.id === ruleId ? { ...r, enabled: !r.enabled } : r));
     const updated = inMemoryRules.find((r) => r.id === ruleId)!;
     return updated;
   },
 
-  async createMonitoringRule(rule: Omit<MonitoringRule, "id" | "trigger_count" | "last_triggered_at">): Promise<MonitoringRule> {
+  async createMonitoringRule(rule: Partial<MonitoringRule>): Promise<MonitoringRule> {
+    if (currentConnectionMode === "connected") {
+      try {
+        const live = await requestWithTimeout<MonitoringRule>("/rules", {
+          method: "POST",
+          body: JSON.stringify(rule),
+        });
+        if (live) {
+          inMemoryRules = [live, ...inMemoryRules];
+          return live;
+        }
+      } catch {
+        // Fall back
+      }
+    }
     const newRule: MonitoringRule = {
-      ...rule,
+      name: rule.name || "Custom Rule",
+      description: rule.description || "",
+      category: rule.category || "any",
+      min_severity: rule.min_severity || "high",
+      ecosystem: rule.ecosystem || "all",
+      technology_pattern: rule.technology_pattern || "*",
+      enabled: true,
+      alert_channels: rule.alert_channels || ["webhook", "in_app"],
       id: `rule-${Date.now().toString(36)}`,
       trigger_count: 0,
+      notification_preferences: rule.notification_preferences,
     };
     inMemoryRules = [newRule, ...inMemoryRules];
     return newRule;
   },
 
+  async updateMonitoringRule(ruleId: string, rule: Partial<MonitoringRule>): Promise<MonitoringRule> {
+    if (currentConnectionMode === "connected") {
+      try {
+        const live = await requestWithTimeout<MonitoringRule>(`/rules/${ruleId}`, {
+          method: "PUT",
+          body: JSON.stringify(rule),
+        });
+        if (live) {
+          inMemoryRules = inMemoryRules.map((r) => (r.id === ruleId ? live : r));
+          return live;
+        }
+      } catch {
+        // Fall back
+      }
+    }
+    inMemoryRules = inMemoryRules.map((r) => (r.id === ruleId ? { ...r, ...rule } : r));
+    return inMemoryRules.find((r) => r.id === ruleId)!;
+  },
+
+  async deleteMonitoringRule(ruleId: string): Promise<boolean> {
+    if (currentConnectionMode === "connected") {
+      try {
+        await requestWithTimeout(`/rules/${ruleId}`, { method: "DELETE" });
+      } catch {
+        // Fall back
+      }
+    }
+    inMemoryRules = inMemoryRules.filter((r) => r.id !== ruleId);
+    return true;
+  },
+
+  async getAlertRecords(): Promise<any[]> {
+    if (currentConnectionMode === "connected") {
+      try {
+        const live = await requestWithTimeout<any[]>("/rules/alerts");
+        if (live) return live;
+      } catch {
+        // Fall back
+      }
+    }
+    return [];
+  },
+
+  // Scheduler & Ingestion Observability
+  async getSchedulerHealth(): Promise<any | null> {
+    if (currentConnectionMode === "connected") {
+      try {
+        return await requestWithTimeout<any>("/scheduler/status");
+      } catch {
+        // Fall back
+      }
+    }
+    return null;
+  },
+
+  async triggerSchedulerRunNow(): Promise<any> {
+    if (currentConnectionMode === "connected") {
+      try {
+        return await requestWithTimeout("/scheduler/run-now", { method: "POST" });
+      } catch {
+        // Fall back
+      }
+    }
+    return { status: "completed", sources_processed: inMemorySources.length };
+  },
+
+  async pauseScheduler(): Promise<any> {
+    if (currentConnectionMode === "connected") {
+      try {
+        return await requestWithTimeout("/scheduler/pause", { method: "POST" });
+      } catch {
+        // Fall back
+      }
+    }
+    return { status: "paused", is_paused: true };
+  },
+
+  async resumeScheduler(): Promise<any> {
+    if (currentConnectionMode === "connected") {
+      try {
+        return await requestWithTimeout("/scheduler/resume", { method: "POST" });
+      } catch {
+        // Fall back
+      }
+    }
+    return { status: "resumed", is_paused: false };
+  },
+
   // Investigations Copilot
   async getInvestigationSessions(): Promise<InvestigationSession[]> {
+    if (currentConnectionMode === "connected") {
+      try {
+        const live = await requestWithTimeout<InvestigationSession[]>("/copilot/sessions");
+        if (live && live.length > 0) return live;
+      } catch {
+        // Fall back to inMemoryInvestigations
+      }
+    }
     return inMemoryInvestigations;
   },
 
   async getInvestigationById(id: string): Promise<InvestigationSession | null> {
+    if (currentConnectionMode === "connected") {
+      try {
+        const live = await requestWithTimeout<InvestigationSession>(`/copilot/sessions/${id}`);
+        if (live) return live;
+      } catch {
+        // Fall back
+      }
+    }
     return inMemoryInvestigations.find((s) => s.id === id) || null;
   },
 
   async createInvestigationSession(title: string, technology: string): Promise<InvestigationSession> {
+    if (currentConnectionMode === "connected") {
+      try {
+        const live = await requestWithTimeout<InvestigationSession>("/copilot/sessions", {
+          method: "POST",
+          body: JSON.stringify({ title, primary_technology: technology, severity: "high" }),
+        });
+        if (live) return live;
+      } catch {
+        // Fall back
+      }
+    }
+
     const newSession: InvestigationSession = {
       id: `inv-${Date.now().toString(36)}`,
       title,
@@ -444,6 +626,75 @@ export const api = {
     userQuery: string,
     onChunk?: (token: string) => void
   ): Promise<InvestigationMessage> {
+    if (currentConnectionMode === "connected") {
+      try {
+        const res = await fetch(`/api/copilot/sessions/${sessionId}/chat/stream`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: userQuery }),
+        });
+
+        if (res.ok && res.body) {
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+          let fullText = "";
+          let citations: any[] = [];
+          let graphPaths: string[] = [];
+          let suggestedFollowUps: string[] = [];
+          let uncertaintyNotes: string[] = [];
+          let groundingStatus: any = "fully_grounded";
+          let messageId = `msg-a-${Date.now().toString(36)}`;
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (trimmed.startsWith("data: ")) {
+                try {
+                  const event = JSON.parse(trimmed.slice(6));
+                  if (event.type === "metadata") {
+                    citations = event.citations || [];
+                    graphPaths = event.graph_paths || [];
+                    suggestedFollowUps = event.suggested_follow_ups || [];
+                    uncertaintyNotes = event.uncertainty_notes || [];
+                    groundingStatus = event.grounding_status || "fully_grounded";
+                  } else if (event.type === "token") {
+                    fullText += event.content;
+                    if (onChunk) onChunk(event.content);
+                  } else if (event.type === "done") {
+                    if (event.message_id) messageId = event.message_id;
+                  }
+                } catch {
+                  // ignore incomplete JSON chunk
+                }
+              }
+            }
+          }
+
+          const assistantMsg: InvestigationMessage = {
+            id: messageId,
+            role: "assistant",
+            content: fullText,
+            timestamp: new Date().toISOString(),
+            citations,
+            graph_paths: graphPaths,
+            suggestedFollowUps,
+            uncertainty_notes: uncertaintyNotes,
+            grounding_status: groundingStatus,
+          };
+          return assistantMsg;
+        }
+      } catch (e) {
+        console.warn("Live copilot streaming failed; falling back to demo simulation:", e);
+      }
+    }
+
     const session = inMemoryInvestigations.find((s) => s.id === sessionId);
     const userMsg: InvestigationMessage = {
       id: `msg-u-${Date.now().toString(36)}`,

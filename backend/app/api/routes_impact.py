@@ -1,11 +1,13 @@
-"""API routes for triggering impact assessments and viewing evidence-backed reports."""
+"""API routes for triggering impact assessments, evidence-grounded investigations, and viewing reports."""
 
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
+
 from ..impact.report_generator import format_markdown_dossier
 from ..schemas.event import IntelligenceEvent
+from ..schemas.investigation import InvestigationReport, InvestigationRequest
 from ..schemas.report import ImpactReport
 
 router = APIRouter(prefix="/api/impact", tags=["Impact Analysis"])
@@ -27,6 +29,50 @@ async def analyze_event_impact(payload: AnalyzeRequest, request: Request):
         raise HTTPException(status_code=404, detail=f"Intelligence event '{payload.event_id}' not found.")
 
     report = await analyzer.generate_impact_report(event=event, max_graph_depth=payload.max_depth)
+    return report
+
+
+@router.post("/investigate", response_model=InvestigationReport)
+async def investigate_impact(payload: InvestigationRequest, request: Request):
+    """Execute unified evidence-grounded impact investigation combining Live RAG and Temporal Graph RAG."""
+    investigation_service = request.app.state.investigation_service
+    report = await investigation_service.investigate(payload)
+
+    # Persist report to disk store for inspection and audit trail
+    disk_store = request.app.state.disk_store
+    disk_store.upsert_item("investigation_reports", report)
+
+    return report
+
+
+@router.get("/investigations", response_model=List[InvestigationReport])
+def list_investigations(
+    request: Request,
+    technology: Optional[str] = None,
+    limit: int = Query(default=20, ge=1, le=100),
+):
+    """List all generated unified impact investigation reports."""
+    disk_store = request.app.state.disk_store
+    reports: List[InvestigationReport] = disk_store.load_all("investigation_reports", InvestigationReport)
+    reports.sort(key=lambda x: x.investigation_timestamp, reverse=True)
+
+    if technology:
+        reports = [
+            r for r in reports
+            if (r.target_technology and technology.lower() in r.target_technology.lower())
+            or technology.lower() in r.query_or_event.lower()
+        ]
+
+    return reports[:limit]
+
+
+@router.get("/investigations/{report_id}", response_model=InvestigationReport)
+def get_investigation_report(report_id: str, request: Request):
+    """Retrieve an investigation report by ID."""
+    disk_store = request.app.state.disk_store
+    report = disk_store.get_by_id("investigation_reports", report_id, InvestigationReport)
+    if not report:
+        raise HTTPException(status_code=404, detail=f"Investigation report '{report_id}' not found.")
     return report
 
 

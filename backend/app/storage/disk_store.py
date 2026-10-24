@@ -78,3 +78,14 @@ class DiskStore:
             if getattr(item, id_field) == item_id:
                 return item
         return None
+
+    def delete_item(self, collection_name: str, item_id: str, model_cls: Type[T], id_field: str = "id") -> bool:
+        """Delete a single item by its ID. Returns True if deleted, False if not found."""
+        with self._lock:
+            items = self.load_all(collection_name, model_cls)
+            initial_count = len(items)
+            filtered = [item for item in items if getattr(item, id_field) != item_id]
+            if len(filtered) < initial_count:
+                self.save_all(collection_name, filtered)
+                return True
+            return False

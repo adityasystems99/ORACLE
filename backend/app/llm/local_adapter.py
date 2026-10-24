@@ -59,6 +59,35 @@ class LocalLLMAdapter(BaseLLMAdapter):
         }
         return content, provenance
 
+    async def stream_text(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        temperature: float = 0.2,
+        max_tokens: int = 2048,
+    ):
+        url = f"{self.base_url}/api/generate"
+        payload = {
+            "model": self.model_name,
+            "prompt": prompt,
+            "system": system_prompt or "You are ORACLE, an advanced technical intelligence copilot.",
+            "stream": True,
+            "options": {"temperature": temperature, "num_predict": max_tokens},
+        }
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            async with client.stream("POST", url, json=payload) as response:
+                response.raise_for_status()
+                async for line in response.aiter_lines():
+                    if not line:
+                        continue
+                    try:
+                        chunk = json.loads(line)
+                        token = chunk.get("response", "")
+                        if token:
+                            yield token
+                    except Exception:
+                        continue
+
     async def generate_structured(
         self,
         prompt: str,

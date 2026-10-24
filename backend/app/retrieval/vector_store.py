@@ -115,19 +115,23 @@ class VectorStore:
         collection_name: str,
         query_text: str,
         n_results: int = 5,
+        where: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
-        """Retrieve most similar documents based on cosine distance."""
+        """Retrieve most similar documents based on cosine distance with optional metadata filtering."""
         query_emb = self.embedder.embed_text(query_text)
 
         # 1. Try ChromaDB
         if self.chroma_client:
             try:
                 col = self.chroma_client.get_collection(name=collection_name)
-                results = col.query(
-                    query_embeddings=[query_emb],
-                    n_results=n_results,
-                    include=["documents", "metadatas", "distances"],
-                )
+                kwargs: Dict[str, Any] = {
+                    "query_embeddings": [query_emb],
+                    "n_results": n_results,
+                    "include": ["documents", "metadatas", "distances"],
+                }
+                if where:
+                    kwargs["where"] = where
+                results = col.query(**kwargs)
                 output = []
                 if results and "ids" in results and results["ids"]:
                     for doc_id, doc, meta, dist in zip(
@@ -146,19 +150,30 @@ class VectorStore:
             except Exception as e:
                 logger.debug(f"ChromaDB query failed or collection empty: {e}")
 
-        # 2. Local index fallback
+        # 2. Local index fallback with metadata filtering
         col_data = self.local_indices.get(collection_name, {})
         if not col_data:
             return []
 
         scored = []
         for doc_id, item in col_data.items():
+            meta = item.get("metadata", {})
+            # Check where filter
+            if where:
+                match = True
+                for k, v in where.items():
+                    if meta.get(k) != v:
+                        match = False
+                        break
+                if not match:
+                    continue
+
             emb = item.get("embedding", [])
             score = cosine_similarity(query_emb, emb)
             scored.append({
                 "id": doc_id,
                 "document": item.get("document", ""),
-                "metadata": item.get("metadata", {}),
+                "metadata": meta,
                 "score": round(score, 3),
             })
 

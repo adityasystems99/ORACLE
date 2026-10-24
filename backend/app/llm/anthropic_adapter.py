@@ -60,6 +60,24 @@ class AnthropicAdapter(BaseLLMAdapter):
         }
         return content, provenance
 
+    async def stream_text(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        temperature: float = 0.2,
+        max_tokens: int = 2048,
+    ):
+        client = self._get_client()
+        async with client.messages.stream(
+            model=self.model_name,
+            system=system_prompt or "You are ORACLE, an advanced technical intelligence copilot.",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=temperature,
+            max_tokens=max_tokens,
+        ) as stream:
+            async for text in stream.text_stream:
+                yield text
+
     async def generate_structured(
         self,
         prompt: str,

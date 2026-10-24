@@ -1,0 +1,435 @@
+{
+  "audit_timestamp": "2026-10-24T15:44:21.387277+00:00",
+  "duration_seconds": 1.51,
+  "area_1_change_detection": {
+    "sample_size": 9,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "category_accuracy": 0.7778,
+    "severity_accuracy": 0.6667,
+    "details": [
+      {
+        "id": "sample-new-fastapi-lifespan",
+        "status": "DETECTED (TP)",
+        "expected_category": "deprecation",
+        "got_category": "general_update",
+        "category_match": false,
+        "expected_severity": "medium",
+        "got_severity": "low",
+        "severity_match": false
+      },
+      {
+        "id": "sample-new-pydantic-v2",
+        "status": "DETECTED (TP)",
+        "expected_category": "breaking_change",
+        "got_category": "breaking_change",
+        "category_match": true,
+        "expected_severity": "high",
+        "got_severity": "high",
+        "severity_match": true
+      },
+      {
+        "id": "sample-new-cve-fastapi",
+        "status": "DETECTED (TP)",
+        "expected_category": "security_vulnerability",
+        "got_category": "security_vulnerability",
+        "category_match": true,
+        "expected_severity": "high",
+        "got_severity": "high",
+        "severity_match": true
+      },
+      {
+        "id": "sample-new-nextjs-15-async",
+        "status": "DETECTED (TP)",
+        "expected_category": "breaking_change",
+        "got_category": "breaking_change",
+        "category_match": true,
+        "expected_severity": "high",
+        "got_severity": "high",
+        "severity_match": true
+      },
+      {
+        "id": "sample-new-cloudflare-outage",
+        "status": "DETECTED (TP)",
+        "expected_category": "outage",
+        "got_category": "outage",
+        "category_match": true,
+        "expected_severity": "critical",
+        "got_severity": "medium",
+        "severity_match": false
+      },
+      {
+        "id": "sample-revised-pydantic-v2-migration",
+        "status": "DETECTED (TP)",
+        "expected_category": "deprecation",
+        "got_category": "deprecation",
+        "category_match": true,
+        "expected_severity": "medium",
+        "got_severity": "medium",
+        "severity_match": true
+      },
+      {
+        "id": "sample-revised-cve-fastapi-patch",
+        "status": "DETECTED (TP)",
+        "expected_category": "security_vulnerability",
+        "got_category": "security_vulnerability",
+        "category_match": true,
+        "expected_severity": "high",
+        "got_severity": "high",
+        "severity_match": true
+      },
+      {
+        "id": "sample-duplicate-pydantic-v2-mirror",
+        "status": "DETECTED (TP)",
+        "expected_category": "breaking_change",
+        "got_category": "breaking_change",
+        "category_match": true,
+        "expected_severity": "high",
+        "got_severity": "high",
+        "severity_match": true
+      },
+      {
+        "id": "sample-outdated-fastapi-on-event-docs",
+        "status": "DETECTED (TP)",
+        "expected_category": "general_update",
+        "got_category": "major_release",
+        "category_match": false,
+        "expected_severity": "low",
+        "got_severity": "medium",
+        "severity_match": false
+      }
+    ]
+  },
+  "area_2_document_versioning": {
+    "duplicate_deduplication_success": true,
+    "version_incremented": true,
+    "history_preserved": true,
+    "previous_version_count": 1,
+    "current_version": 2
+  },
+  "area_3_evidence_recall_at_5": {
+    "total_queries": 13,
+    "hits_at_5": 13,
+    "recall_at_5": 1.0,
+    "breakdown": [
+      {
+        "sample_id": "sample-new-fastapi-lifespan",
+        "query": "What happened to on_event startup handlers in FastAPI 0.111.0?",
+        "target_chunk": "chk_sample-new-fastapi-lifespan",
+        "retrieved_chunks": [
+          "doc_fastapi_lifespan_v1_c0",
+          "doc_fastapi_lifespan_v2_c0",
+          "chk_sample-new-fastapi-lifespan",
+          "chk_sample-new-cve-fastapi",
+          "chk_sample-revised-cve-fastapi-patch"
+        ],
+        "is_hit": true
+      },
+      {
+        "sample_id": "sample-new-pydantic-v2",
+        "query": "What are the breaking changes in Pydantic V2 regarding validators?",
+        "target_chunk": "chk_sample-new-pydantic-v2",
+        "retrieved_chunks": [
+          "chk_sample-unsupported-docker-pydantic",
+          "chk_sample-new-pydantic-v2",
+          "chk_sample-duplicate-pydantic-v2-mirror",
+          "chk_sample-conflicting-blog-pydantic-v2",
+          "chk_sample-unsupported-kafka-rails"
+        ],
+        "is_hit": true
+      },
+      {
+        "sample_id": "sample-new-cve-fastapi",
+        "query": "Explain CVE-2024-24762 in FastAPI Content-Type parsing",
+        "target_chunk": "chk_sample-new-cve-fastapi",
+        "retrieved_chunks": [
+          "chk_sample-new-cve-fastapi",
+          "chk_sample-revised-cve-fastapi-patch",
+          "doc_fastapi_lifespan_v1_c0",
+          "doc_fastapi_lifespan_v2_c0",
+          "chk_sample-unsupported-fastapi-react"
+        ],
+        "is_hit": true
+      },
+      {
+        "sample_id": "sample-new-nextjs-15-async",
+        "query": "How do cookies and headers work in Next.js 15?",
+        "target_chunk": "chk_sample-new-nextjs-15-async",
+        "retrieved_chunks": [
+          "chk_sample-new-nextjs-15-async",
+          "chk_sample-new-cloudflare-outage",
+          "chk_sample-new-fastapi-lifespan",
+          "chk_sample-unsupported-docker-pydantic",
+          "chk_sample-unsupported-fastapi-react"
+        ],
+        "is_hit": true
+      },
+      {
+        "sample_id": "sample-new-cloudflare-outage",
+        "query": "Is there an ongoing outage affecting Cloudflare edge services?",
+        "target_chunk": "chk_sample-new-cloudflare-outage",
+        "retrieved_chunks": [
+          "chk_sample-new-cloudflare-outage",
+          "chk_sample-outdated-fastapi-on-event-docs",
+          "doc_fastapi_lifespan_v2_c0",
+          "chk_sample-new-pydantic-v2",
+          "chk_sample-duplicate-pydantic-v2-mirror"
+        ],
+        "is_hit": true
+      },
+      {
+        "sample_id": "sample-revised-pydantic-v2-migration",
+        "query": "Can Pydantic V1 models be run alongside Pydantic 2.7?",
+        "target_chunk": "chk_sample-revised-pydantic-v2-migration",
+        "retrieved_chunks": [
+          "chk_sample-revised-pydantic-v2-migration",
+          "chk_sample-conflicting-blog-pydantic-v2",
+          "chk_sample-outdated-fastapi-on-event-docs",
+          "chk_sample-unsupported-kafka-rails",
+          "chk_sample-unsupported-docker-pydantic"
+        ],
+        "is_hit": true
+      },
+      {
+        "sample_id": "sample-revised-cve-fastapi-patch",
+        "query": "Which version of FastAPI patches CVE-2024-24762?",
+        "target_chunk": "chk_sample-revised-cve-fastapi-patch",
+        "retrieved_chunks": [
+          "chk_sample-new-cve-fastapi",
+          "chk_sample-revised-cve-fastapi-patch",
+          "doc_fastapi_lifespan_v1_c0",
+          "doc_fastapi_lifespan_v2_c0",
+          "chk_sample-new-fastapi-lifespan"
+        ],
+        "is_hit": true
+      },
+      {
+        "sample_id": "sample-duplicate-pydantic-v2-mirror",
+        "query": "How are root validators migrated in Pydantic V2?",
+        "target_chunk": "chk_sample-duplicate-pydantic-v2-mirror",
+        "retrieved_chunks": [
+          "chk_sample-conflicting-blog-pydantic-v2",
+          "chk_sample-unsupported-docker-pydantic",
+          "chk_sample-new-pydantic-v2",
+          "chk_sample-duplicate-pydantic-v2-mirror",
+          "chk_sample-unsupported-kafka-rails"
+        ],
+        "is_hit": true
+      },
+      {
+        "sample_id": "sample-outdated-fastapi-on-event-docs",
+        "query": "Is app.on_event('startup') still the recommended pattern for FastAPI today?",
+        "target_chunk": "chk_sample-outdated-fastapi-on-event-docs",
+        "retrieved_chunks": [
+          "chk_sample-outdated-fastapi-on-event-docs",
+          "chk_sample-new-fastapi-lifespan",
+          "chk_sample-revised-cve-fastapi-patch",
+          "doc_fastapi_lifespan_v2_c0",
+          "chk_sample-new-nextjs-15-async"
+        ],
+        "is_hit": true
+      },
+      {
+        "sample_id": "sample-conflicting-blog-pydantic-v2",
+        "query": "Does Pydantic V2 maintain indefinite backward compatibility for @validator decorators?",
+        "target_chunk": "chk_sample-conflicting-blog-pydantic-v2",
+        "retrieved_chunks": [
+          "chk_sample-conflicting-blog-pydantic-v2",
+          "chk_sample-revised-pydantic-v2-migration",
+          "chk_sample-new-pydantic-v2",
+          "chk_sample-duplicate-pydantic-v2-mirror",
+          "chk_sample-unsupported-docker-pydantic"
+        ],
+        "is_hit": true
+      },
+      {
+        "sample_id": "sample-unsupported-kafka-rails",
+        "query": "Does Apache Kafka directly depend on Ruby on Rails ActiveRecord?",
+        "target_chunk": "chk_sample-unsupported-kafka-rails",
+        "retrieved_chunks": [
+          "chk_sample-unsupported-kafka-rails",
+          "chk_sample-new-pydantic-v2",
+          "chk_sample-duplicate-pydantic-v2-mirror",
+          "chk_sample-unsupported-docker-pydantic",
+          "chk_sample-new-nextjs-15-async"
+        ],
+        "is_hit": true
+      },
+      {
+        "sample_id": "sample-unsupported-fastapi-react",
+        "query": "Does FastAPI runtime depend directly on React?",
+        "target_chunk": "chk_sample-unsupported-fastapi-react",
+        "retrieved_chunks": [
+          "chk_sample-unsupported-fastapi-react",
+          "doc_fastapi_lifespan_v2_c0",
+          "doc_fastapi_lifespan_v1_c0",
+          "chk_sample-new-cve-fastapi",
+          "chk_sample-new-fastapi-lifespan"
+        ],
+        "is_hit": true
+      },
+      {
+        "sample_id": "sample-unsupported-docker-pydantic",
+        "query": "Does the Docker engine daemon depend on Pydantic for container isolation?",
+        "target_chunk": "chk_sample-unsupported-docker-pydantic",
+        "retrieved_chunks": [
+          "chk_sample-unsupported-docker-pydantic",
+          "chk_sample-unsupported-kafka-rails",
+          "chk_sample-outdated-fastapi-on-event-docs",
+          "chk_sample-revised-pydantic-v2-migration",
+          "chk_sample-conflicting-blog-pydantic-v2"
+        ],
+        "is_hit": true
+      }
+    ]
+  },
+  "area_4_citation_correctness": {
+    "total_citations_evaluated": 25,
+    "valid_citations": 25,
+    "citation_validity_rate": 1.0,
+    "grounded_claims_count": 23
+  },
+  "area_5_temporal_accuracy": {
+    "past_temporal_check_passed": true,
+    "current_temporal_check_passed": true,
+    "temporal_accuracy": 1.0
+  },
+  "area_6_graph_provenance": {
+    "total_edges": 32,
+    "edges_with_evidence": 32,
+    "evidence_provenance_rate": 1.0,
+    "edges_with_valid_interval": 32,
+    "interval_provenance_rate": 1.0
+  },
+  "area_7_impact_path_precision": {
+    "cases_evaluated": 4,
+    "mean_path_precision": 0.8167,
+    "mean_path_recall": 1.0,
+    "case_breakdown": [
+      {
+        "root": "fastapi",
+        "discovered": [
+          "project_oracle_copilot",
+          "internal_crm_service",
+          "analytics_pipeline"
+        ],
+        "expected": [
+          "internal_crm_service",
+          "analytics_pipeline"
+        ],
+        "precision": 0.6667,
+        "recall": 1.0
+      },
+      {
+        "root": "pydantic",
+        "discovered": [
+          "fastapi",
+          "sqlmodel",
+          "project_oracle_copilot",
+          "internal_crm_service",
+          "analytics_pipeline"
+        ],
+        "expected": [
+          "fastapi",
+          "internal_crm_service",
+          "analytics_pipeline"
+        ],
+        "precision": 0.6,
+        "recall": 1.0
+      },
+      {
+        "root": "nextjs",
+        "discovered": [
+          "customer_portal_web"
+        ],
+        "expected": [
+          "customer_portal_web"
+        ],
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      {
+        "root": "cloudflare",
+        "discovered": [
+          "customer_portal_web"
+        ],
+        "expected": [
+          "customer_portal_web"
+        ],
+        "precision": 1.0,
+        "recall": 1.0
+      }
+    ]
+  },
+  "area_8_resistance_to_unsupported_deps": {
+    "unsupported_scenarios_tested": 3,
+    "hallucinated_count": 0,
+    "false_positive_rate": 0.0,
+    "resistance_score": 1.0,
+    "details": [
+      {
+        "sample_id": "sample-unsupported-kafka-rails",
+        "query": "Does Apache Kafka directly depend on Ruby on Rails ActiveRecord?",
+        "spurious_investigation_findings": [],
+        "spurious_graph_rag_affected": [],
+        "has_hallucination": false
+      },
+      {
+        "sample_id": "sample-unsupported-fastapi-react",
+        "query": "Does FastAPI runtime depend directly on React?",
+        "spurious_investigation_findings": [],
+        "spurious_graph_rag_affected": [],
+        "has_hallucination": false
+      },
+      {
+        "sample_id": "sample-unsupported-docker-pydantic",
+        "query": "Does the Docker engine daemon depend on Pydantic for container isolation?",
+        "spurious_investigation_findings": [],
+        "spurious_graph_rag_affected": [],
+        "has_hallucination": false
+      }
+    ]
+  },
+  "area_9_api_reliability": {
+    "total_boundary_tests": 4,
+    "passed_tests": 4,
+    "reliability_rate": 1.0,
+    "details": [
+      {
+        "test": "empty_query",
+        "passed": true,
+        "error": null
+      },
+      {
+        "test": "invalid_timestamp",
+        "passed": true,
+        "error": null
+      },
+      {
+        "test": "nonexistent_root_entity",
+        "passed": true,
+        "error": null
+      },
+      {
+        "test": "extreme_depth",
+        "passed": true,
+        "error": null
+      }
+    ]
+  },
+  "area_10_comparative_benchmark": {
+    "sample_size": 8,
+    "vector_only_baseline": {
+      "impacted_entity_discovery_rate": 0.0,
+      "provenance_transparency_rate": 0.0,
+      "multi_hop_traversal_supported": false
+    },
+    "combined_live_graph_rag": {
+      "impacted_entity_discovery_rate": 0.9167,
+      "provenance_transparency_rate": 8.5,
+      "multi_hop_traversal_supported": true,
+      "relative_discovery_improvement": 91.67
+    }
+  }
+}

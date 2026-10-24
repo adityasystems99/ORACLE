@@ -43,6 +43,21 @@ class MockLLMAdapter(BaseLLMAdapter):
         )
         return text, provenance
 
+    async def stream_text(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        temperature: float = 0.2,
+        max_tokens: int = 2048,
+    ):
+        """Stream simulated response tokens for offline testing."""
+        import asyncio
+        text, _ = await self.generate_text(prompt, system_prompt, temperature, max_tokens)
+        words = text.split(" ")
+        for i, word in enumerate(words):
+            yield word + (" " if i < len(words) - 1 else "")
+            await asyncio.sleep(0.005)
+
     async def generate_structured(
         self,
         prompt: str,

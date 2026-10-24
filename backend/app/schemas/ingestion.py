@@ -13,6 +13,7 @@ class SourceType(str, Enum):
     SECURITY_ADVISORY = "security_advisory"
     STATUS_PAGE = "status_page"
     CHANGELOG = "changelog"
+    OFFICIAL_REGISTRY = "official_registry"
 
 
 class IngestionSource(BaseModel):
@@ -25,9 +26,16 @@ class IngestionSource(BaseModel):
     ecosystem: str = Field(default="generic", description="Target ecosystem, e.g. python, node, cloud")
     refresh_interval_minutes: int = Field(default=30, ge=1, le=1440)
     last_synced_at: Optional[datetime] = None
+    last_successful_run_at: Optional[datetime] = None
+    next_scheduled_run_at: Optional[datetime] = None
     last_status: Optional[str] = "initialized"
+    error_message: Optional[str] = None
+    consecutive_failures: int = Field(default=0, ge=0)
+    rate_limit_reset_at: Optional[datetime] = None
     etag: Optional[str] = None
     last_modified: Optional[str] = None
+    target_type: Optional[str] = "technology"
+    topics: list[str] = Field(default_factory=list)
 
 
 class RawSignal(BaseModel):

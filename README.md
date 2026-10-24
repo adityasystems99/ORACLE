@@ -173,9 +173,40 @@ All 14 tests cover:
 | `GET` | `/api/events` | List classified intelligence events with filters |
 | `GET` | `/api/graph/snapshot` | Export knowledge graph nodes and edges for visualizer |
 | `GET` | `/api/graph/blast-radius` | Compute dependency impact radius for any technology |
-| `POST` | `/api/impact/analyze` | Synthesize evidence-backed impact dossier using LLM |
-| `GET` | `/api/impact/reports` | Retrieve list of generated dossiers |
-| `GET` | `/api/impact/reports/{id}/markdown` | Export formatted Markdown briefing |
+| `POST` | `/api/impact/investigate` | Evidence-grounded unified impact analysis report |
+| `GET` | `/api/rules` | List all configured autonomous monitoring rules |
+| `POST` | `/api/rules` | Create a new autonomous watch rule |
+| `GET` | `/api/rules/alerts` | Audit log of dispatched, deduplicated alert records |
+| `POST` | `/api/rules/{id}/pause` | Pause an active monitoring rule |
+| `POST` | `/api/rules/{id}/resume` | Resume a paused monitoring rule |
+| `DELETE` | `/api/rules/{id}` | Delete a monitoring rule |
+| `GET` | `/api/scheduler/status` | Ingestion scheduler health, next runs, and error backoff |
+| `POST` | `/api/scheduler/run-now` | Trigger immediate execution of due sources |
+| `POST` | `/api/scheduler/pause` | Pause scheduled background polling |
+| `POST` | `/api/scheduler/resume` | Resume scheduled background polling |
+| `GET` | `/api/copilot/sessions` | List active investigation copilot sessions |
+| `POST` | `/api/copilot/sessions/{id}/chat/stream` | Server-Sent Events (SSE) streaming copilot chat |
+
+---
+
+## 5. Autonomous Monitoring & Scheduled Ingestion Engine
+
+ORACLE features an in-process, bounded, idempotent scheduler built for local modular monoliths:
+
+### Core Capabilities
+1. **Multi-Target Watchers**: Users can define monitoring rules targeting specific technologies, APIs, products, GitHub repositories, CVE advisories, or technical topics.
+2. **Deterministic Deduplication**: Dispatches alerts using canonical deduplication keys (`rule_id:event_id:version`), preventing repeated notifications for the same event and release version.
+3. **Automated Impact Investigations**: When a matching event passes the severity and category gate, the scheduler automatically triggers a Temporal Graph RAG investigation and attaches the synthesized impact report.
+4. **Checkpoint Tracking & 304 Caching**: Uses HTTP `ETag` and `If-Modified-Since` headers to prevent redundant document chunking and vector index operations.
+5. **Rate Limiting & Exponential Backoff**: Automatically tracks upstream rate limit windows (HTTP 429) and backs off exponentially on consecutive transient failures.
+
+### Polling vs. True Push-Based Updates Disclaimer
+
+> [!IMPORTANT]
+> **Operational Boundary Notice:**
+> ORACLE operates on **scheduled interval polling with HTTP conditional request checkpointing** (ETags, `If-None-Match`, and SHA-256 fingerprint deduplication). It does not maintain persistent push-based webhooks or inbound socket connections from third-party vendors.
+> 
+> **Continuous monitoring is active only while the ORACLE backend process is running.** If the application process terminates, monitoring halts until the server is restarted. Ingestion checkpoints ensure that when restarted, any events published during downtime are captured on the next sync cycle.
 
 ---
 

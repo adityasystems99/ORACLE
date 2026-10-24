@@ -69,6 +69,6 @@ class CopilotChatRequest(BaseModel):
 
 class CopilotCreateSessionRequest(BaseModel):
     """Payload to create a new investigation session."""
-    title: str = Field(..., min_length=2, description="Investigation title")
-    primary_technology: str = Field(..., min_length=1, description="Primary technology")
+    title: Optional[str] = Field(default="Live Investigation", description="Investigation title")
+    primary_technology: Optional[str] = Field(default="general", description="Primary technology")
     severity: Optional[str] = Field(default="high", description="Initial severity")

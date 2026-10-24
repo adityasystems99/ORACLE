@@ -84,6 +84,24 @@ def resume_rule(rule_id: str, request: Request) -> MonitoringRule:
     return rule
 
 
+@router.patch("/rules/{rule_id}", response_model=MonitoringRule)
+def patch_rule(rule_id: str, payload: dict, request: Request) -> MonitoringRule:
+    """Partially update or toggle a monitoring rule."""
+    engine = get_monitoring_engine(request)
+    if "enabled" in payload:
+        if payload["enabled"]:
+            rule = engine.resume_rule(rule_id)
+        else:
+            rule = engine.pause_rule(rule_id)
+        if rule:
+            return rule
+    rule_update = MonitoringRuleUpdate(**{k: v for k, v in payload.items() if k != "enabled"})
+    rule = engine.update_rule(rule_id, rule_update)
+    if not rule:
+        raise HTTPException(status_code=404, detail=f"Rule '{rule_id}' not found.")
+    return rule
+
+
 @router.delete("/rules/{rule_id}")
 def delete_rule(rule_id: str, request: Request):
     """Delete a monitoring rule."""

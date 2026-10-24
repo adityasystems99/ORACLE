@@ -1,7 +1,7 @@
 """FastAPI router for ORACLE Conversational Investigation Copilot."""
 
 import logging
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
@@ -93,6 +93,30 @@ async def chat_stream(
 
     return StreamingResponse(
         service.stream_chat(session_id, payload),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@router.post("/chat/stream")
+async def direct_chat_stream(
+    payload: CopilotChatRequest,
+    request: Request,
+    session_id: Optional[str] = None,
+):
+    """Direct stream chat endpoint supporting optional session creation or ephemeral session."""
+    service = get_copilot_service(request)
+    sid = session_id or getattr(payload, "session_id", None)
+    if not sid or not service.get_session(sid):
+        sess = service.create_session(title="Investigation Chat", primary_technology="general", severity="medium")
+        sid = sess.id
+
+    return StreamingResponse(
+        service.stream_chat(sid, payload),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

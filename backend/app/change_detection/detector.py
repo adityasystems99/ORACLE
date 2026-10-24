@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 BREAKING_PATTERNS = [
     r"\bbreaking\s+change[s]?\b",
     r"\bbackward[s]?\s+incompatible\b",
-    r"\bdeprecated\b",
+    r"\bdeprecat(e|ed|es|ing|ion)\b",
     r"\bremoved\s+in\s+v?\d+",
     r"\bno\s+longer\s+supported\b",
     r"\bmigration\s+guide\b",
@@ -120,7 +120,13 @@ class ChangeDetector:
         elif signal.source_type == SourceType.STATUS_PAGE or any(re.search(p, full_text, re.I) for p in OUTAGE_PATTERNS):
             category = ChangeCategory.OUTAGE
             impact = signal.metadata.get("impact", "").lower()
-            severity = SeverityLevel.CRITICAL if impact == "critical" else SeverityLevel.HIGH if impact == "major" else SeverityLevel.MEDIUM
+            lower_text = full_text.lower()
+            if impact == "critical" or "critical" in lower_text or "major outage" in lower_text:
+                severity = SeverityLevel.CRITICAL
+            elif impact == "major" or "major" in lower_text or "service disruption" in lower_text:
+                severity = SeverityLevel.HIGH
+            else:
+                severity = SeverityLevel.MEDIUM
             confidence = 0.92
             rationale = f"Detected live service disruption/incident on {primary_tech}."
             trigger_patterns = OUTAGE_PATTERNS
@@ -134,7 +140,9 @@ class ChangeDetector:
             trigger_patterns = BREAKING_PATTERNS
 
         # 4. Major releases
-        elif "v" in signal.title and any(tag in signal.title for tag in [".0.0", ".0 ", "release"]):
+        elif bool(re.search(r"\b(major\s+release|release\s+v?\d+\.0(\.0)?|announcing\s+v?\d+\.0(\.0)?)\b", signal.title, re.I)) or (
+            bool(re.search(r"\bv\d+\.0(\.0)?\b", signal.title, re.I)) and "tutorial" not in signal.title.lower() and "guide" not in signal.title.lower()
+        ):
             category = ChangeCategory.MAJOR_RELEASE
             severity = SeverityLevel.MEDIUM
             confidence = 0.85

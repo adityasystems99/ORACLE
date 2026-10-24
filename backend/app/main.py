@@ -153,6 +153,10 @@ def create_app() -> FastAPI:
     app.include_router(scheduler_router, prefix="")
     app.include_router(system_router)
 
+    @app.get("/api/sources")
+    def get_sources_alias(request: Request):
+        return request.app.state.ingestion_engine.get_sources()
+
     @app.get("/")
     def root():
         return {

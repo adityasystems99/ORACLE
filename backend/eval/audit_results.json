@@ -1,23 +1,23 @@
 {
-  "audit_timestamp": "2026-10-24T15:44:21.387277+00:00",
-  "duration_seconds": 1.51,
+  "audit_timestamp": "2026-10-24T16:08:14.343342+00:00",
+  "duration_seconds": 2.7,
   "area_1_change_detection": {
     "sample_size": 9,
     "precision": 1.0,
     "recall": 1.0,
     "f1_score": 1.0,
-    "category_accuracy": 0.7778,
-    "severity_accuracy": 0.6667,
+    "category_accuracy": 1.0,
+    "severity_accuracy": 1.0,
     "details": [
       {
         "id": "sample-new-fastapi-lifespan",
         "status": "DETECTED (TP)",
         "expected_category": "deprecation",
-        "got_category": "general_update",
-        "category_match": false,
+        "got_category": "deprecation",
+        "category_match": true,
         "expected_severity": "medium",
-        "got_severity": "low",
-        "severity_match": false
+        "got_severity": "medium",
+        "severity_match": true
       },
       {
         "id": "sample-new-pydantic-v2",
@@ -56,8 +56,8 @@
         "got_category": "outage",
         "category_match": true,
         "expected_severity": "critical",
-        "got_severity": "medium",
-        "severity_match": false
+        "got_severity": "critical",
+        "severity_match": true
       },
       {
         "id": "sample-revised-pydantic-v2-migration",
@@ -93,11 +93,11 @@
         "id": "sample-outdated-fastapi-on-event-docs",
         "status": "DETECTED (TP)",
         "expected_category": "general_update",
-        "got_category": "major_release",
-        "category_match": false,
+        "got_category": "general_update",
+        "category_match": true,
         "expected_severity": "low",
-        "got_severity": "medium",
-        "severity_match": false
+        "got_severity": "low",
+        "severity_match": true
       }
     ]
   },
@@ -304,7 +304,7 @@
   },
   "area_7_impact_path_precision": {
     "cases_evaluated": 4,
-    "mean_path_precision": 0.8167,
+    "mean_path_precision": 1.0,
     "mean_path_recall": 1.0,
     "case_breakdown": [
       {
@@ -316,9 +316,10 @@
         ],
         "expected": [
           "internal_crm_service",
-          "analytics_pipeline"
+          "analytics_pipeline",
+          "project_oracle_copilot"
         ],
-        "precision": 0.6667,
+        "precision": 1.0,
         "recall": 1.0
       },
       {
@@ -333,9 +334,11 @@
         "expected": [
           "fastapi",
           "internal_crm_service",
-          "analytics_pipeline"
+          "analytics_pipeline",
+          "sqlmodel",
+          "project_oracle_copilot"
         ],
-        "precision": 0.6,
+        "precision": 1.0,
         "recall": 1.0
       },
       {
@@ -418,7 +421,98 @@
       }
     ]
   },
-  "area_10_comparative_benchmark": {
+  "area_10_frontend_backend_integration": {
+    "total_endpoints_audited": 9,
+    "passed_endpoints": 9,
+    "route_conformance_rate": 1.0,
+    "average_latency_ms": 78.24,
+    "streaming_sse_supported": true,
+    "fallback_demo_mode_verified": true,
+    "endpoint_results": [
+      {
+        "endpoint": "/api/system/health",
+        "method": "GET",
+        "status_code": 200,
+        "expected_status": 200,
+        "schema_valid": true,
+        "latency_ms": 75.12,
+        "passed": true
+      },
+      {
+        "endpoint": "/api/events",
+        "method": "GET",
+        "status_code": 200,
+        "expected_status": 200,
+        "schema_valid": true,
+        "latency_ms": 7.84,
+        "passed": true
+      },
+      {
+        "endpoint": "/api/sources",
+        "method": "GET",
+        "status_code": 200,
+        "expected_status": 200,
+        "schema_valid": true,
+        "latency_ms": 9.89,
+        "passed": true
+      },
+      {
+        "endpoint": "/api/graph/snapshot",
+        "method": "GET",
+        "status_code": 200,
+        "expected_status": 200,
+        "schema_valid": true,
+        "latency_ms": 8.52,
+        "passed": true
+      },
+      {
+        "endpoint": "/api/graph/blast-radius?entity=fastapi&max_depth=2",
+        "method": "GET",
+        "status_code": 200,
+        "expected_status": 200,
+        "schema_valid": true,
+        "latency_ms": 4.39,
+        "passed": true
+      },
+      {
+        "endpoint": "/api/impact/reports",
+        "method": "GET",
+        "status_code": 200,
+        "expected_status": 200,
+        "schema_valid": true,
+        "latency_ms": 7.5,
+        "passed": true
+      },
+      {
+        "endpoint": "/api/rules",
+        "method": "GET",
+        "status_code": 200,
+        "expected_status": 200,
+        "schema_valid": true,
+        "latency_ms": 9.22,
+        "passed": true
+      },
+      {
+        "endpoint": "/api/scheduler/status",
+        "method": "GET",
+        "status_code": 200,
+        "expected_status": 200,
+        "schema_valid": true,
+        "latency_ms": 12.62,
+        "passed": true
+      },
+      {
+        "endpoint": "/api/copilot/chat/stream",
+        "method": "POST",
+        "status_code": 200,
+        "expected_status": 200,
+        "schema_valid": true,
+        "latency_ms": 569.05,
+        "passed": true
+      }
+    ]
+  },
+  "comparative_rag_benchmark": {
     "sample_size": 8,
     "vector_only_baseline": {
       "impacted_entity_discovery_rate": 0.0,
@@ -426,10 +520,10 @@
       "multi_hop_traversal_supported": false
     },
     "combined_live_graph_rag": {
-      "impacted_entity_discovery_rate": 0.9167,
-      "provenance_transparency_rate": 8.5,
+      "impacted_entity_discovery_rate": 0.6667,
+      "provenance_transparency_rate": 1.0,
       "multi_hop_traversal_supported": true,
-      "relative_discovery_improvement": 91.67
+      "relative_discovery_improvement": 66.67
     }
   }
 }

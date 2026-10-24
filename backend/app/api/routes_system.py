@@ -21,6 +21,11 @@ def get_system_health(request: Request):
     signals_count = len(disk_store.load_all("raw_signals", RawSignal))
     reports_count = len(disk_store.load_all("reports", ImpactReport))
     sources = request.app.state.ingestion_engine.get_sources()
+    scheduler = getattr(request.app.state, "scheduler_engine", None)
+    scheduler_summary = scheduler.get_health().model_dump() if scheduler and hasattr(scheduler, "get_health") else {
+        "is_running": False,
+        "scheduler_type": "local_polling_monolith",
+    }
 
     return {
         "status": "healthy",
@@ -32,6 +37,7 @@ def get_system_health(request: Request):
         "signals_count": signals_count,
         "events_count": events_count,
         "reports_count": reports_count,
+        "scheduler": scheduler_summary,
         "graph": {
             "nodes": graph_store.graph.number_of_nodes(),
             "edges": graph_store.graph.number_of_edges(),

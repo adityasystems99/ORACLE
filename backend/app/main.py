@@ -100,8 +100,8 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     logger.info(f"Initializing {settings.APP_NAME} in {settings.APP_ENV} mode...")
     init_app_state(app)
-    if hasattr(app.state, "scheduler_engine") and app.state.scheduler_engine:
-        app.state.scheduler_engine.start(tick_seconds=15)
+    if settings.SCHEDULER_ENABLED and hasattr(app.state, "scheduler_engine") and app.state.scheduler_engine:
+        app.state.scheduler_engine.start(tick_seconds=settings.SCHEDULER_TICK_SECONDS)
     logger.info(f"{settings.APP_NAME} initialization complete. Ready to serve requests.")
     yield
     logger.info(f"Shutting down {settings.APP_NAME}...")

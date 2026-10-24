@@ -52,6 +52,10 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL_NAME: str = "all-MiniLM-L6-v2"
     EMBEDDING_DEVICE: str = "cpu"
 
+    # Autonomous Scheduler & Monitoring
+    SCHEDULER_ENABLED: bool = True
+    SCHEDULER_TICK_SECONDS: int = 15
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
